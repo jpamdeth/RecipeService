@@ -1,9 +1,7 @@
 package org.recipes.recipebook.service;
 
 import org.recipes.recipebook.model.Ingredient;
-import org.recipes.recipebook.model.Recipe;
 import org.recipes.recipebook.repository.IngredientRepository;
-import org.recipes.recipebook.repository.RecipeRepository;
 import org.springframework.stereotype.Service;
 
 import lombok.NonNull;
@@ -15,11 +13,9 @@ import java.util.UUID;
 public class IngredientService {
 
     private final IngredientRepository ingredientRepository;
-    private final RecipeRepository recipeRepository;
 
-    public IngredientService(IngredientRepository ingredientRepository, RecipeRepository recipeRepository) {
+    public IngredientService(IngredientRepository ingredientRepository) {
         this.ingredientRepository = ingredientRepository;
-        this.recipeRepository = recipeRepository;
     }
 
     public List<Ingredient> getAllIngredients() {
@@ -44,7 +40,7 @@ public class IngredientService {
         ingredientRepository.deleteById(id);
     }
 
-    public List<Recipe> getRecipesByIngredient(Ingredient ingredient) {
-        return recipeRepository.findByIngredientsContaining(ingredient);
+    public void useIngredient(@NonNull UUID id, int amount, String unit) {
+        ingredientRepository.useIngredient(id, amount, unit);
     }
 }

@@ -7,30 +7,25 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "ingredient")
-public class Ingredient {
+@Table(name = "recipe_ingredient")
+@IdClass(RecipeIngredientId.class)
+public class RecipeIngredient {
     @Id
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "recipe_id")
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    private UUID id;
+    private UUID recipeId;
 
-    @Column(name = "name")
-    private String name;
-
-    @Column(name = "type")
-    private String type;
-
-    @Column(name = "state")
-    private String state;
+    @Id
+    @Column(name = "ingredient_id")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private UUID ingredientId;
 
     @Column(name = "amount")
     private int amount;
