@@ -1,4 +1,4 @@
-package org.recipes.recipebook;
+package org.recipes.recipebook.helper;
 
 import java.util.Collections;
 import java.util.List;

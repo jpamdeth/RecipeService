@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.recipes.recipebook.TestObjects;
+import org.recipes.recipebook.helper.TestObjects;
 import org.recipes.recipebook.model.Ingredient;
 import org.recipes.recipebook.repository.IngredientRepository;
 import org.springframework.test.context.ActiveProfiles;
