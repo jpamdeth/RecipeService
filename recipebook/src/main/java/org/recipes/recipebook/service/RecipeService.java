@@ -49,6 +49,7 @@ public class RecipeService {
         recipeIngredientRepository.saveAll(recipeIngredients);
     }
 
+    @Transactional
     public void makeRecipe(@NonNull UUID id) {
         List<RecipeIngredient> ingredients = recipeIngredientRepository.findRecipeIngredientsByRecipeId(id);
         for (RecipeIngredient ingredient : ingredients) {
