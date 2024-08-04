@@ -14,7 +14,6 @@ import jakarta.transaction.Transactional;
 public interface IngredientRepository extends JpaRepository<Ingredient, UUID>{
 
     @Modifying
-    @Transactional
     @Query("UPDATE Ingredient i SET i.amount = i.amount - :amount WHERE i.id = :id AND i.unit = :unit")
     public void useIngredient(UUID id, int amount, String unit);
 }
