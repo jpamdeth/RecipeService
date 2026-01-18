@@ -37,6 +37,9 @@ public class IntegrationTest {
   @Autowired
   MockMvc mvc;
 
+  // Recipe JSON without ID - let the database generate it
+  private static final String NEW_RECIPE_JSON = "{\"title\": \"Test Recipe\", \"description\": \"Test Description\", \"category\": \"Test Category\", \"directions\": \"Test Directions\", \"ingredients\": []}";
+
   @Test
   void testRecipes() 
   throws Exception {
@@ -44,7 +47,7 @@ public class IntegrationTest {
 
     MvcResult result = mvc.perform(post("/recipes")
       .contentType(MediaType.APPLICATION_JSON)
-      .content(TestObjects.recipeBytes))
+      .content(NEW_RECIPE_JSON))
       .andExpect(status().isOk())
       .andExpect(content().contentType(MediaType.APPLICATION_JSON))
       .andReturn();
@@ -61,7 +64,7 @@ public class IntegrationTest {
 
     result = mvc.perform(post("/recipes")
       .contentType(MediaType.APPLICATION_JSON)
-      .content(TestObjects.recipeBytes))
+      .content(NEW_RECIPE_JSON))
       .andExpect(status().isOk())
       .andExpect(content().contentType(MediaType.APPLICATION_JSON))
       .andReturn();
@@ -80,6 +83,11 @@ public class IntegrationTest {
     assert(recipeList.contains(recipe1));
     assert(recipeList.contains(recipe2));
 
+    // Refresh recipe1 from the database state before updating
+    result = mvc.perform(get("/recipes/" + recipe1.getId().toString()))
+      .andExpect(status().isOk())
+      .andReturn();
+    recipe1 = mapper.readValue(result.getResponse().getContentAsString(), Recipe.class);
     recipe1.setTitle("Updated Name");
 
     result = mvc.perform(put("/recipes/" + recipe1.getId().toString())
