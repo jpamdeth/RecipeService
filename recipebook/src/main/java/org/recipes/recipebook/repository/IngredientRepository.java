@@ -8,8 +8,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import jakarta.transaction.Transactional;
-
 @Repository
 public interface IngredientRepository extends JpaRepository<Ingredient, UUID>{
 
