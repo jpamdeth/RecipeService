@@ -23,7 +23,7 @@ services:
       - MYSQL_PASSWORD=recipe
       - MYSQL_ROOT_PASSWORD=rootpassword
     ports:
-      - '3306:3306'
+      - '3307:3306'  # External port 3307 to avoid conflicts with local MySQL
     volumes:
       - mysql_data:/var/lib/mysql
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
