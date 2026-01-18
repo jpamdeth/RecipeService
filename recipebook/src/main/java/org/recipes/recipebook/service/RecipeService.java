@@ -8,6 +8,7 @@ import org.recipes.recipebook.model.RecipeIngredient;
 import org.recipes.recipebook.repository.RecipeIngredientRepository;
 import org.recipes.recipebook.repository.RecipeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.NonNull;
 
