@@ -1,10 +1,14 @@
 package org.recipes.recipebook.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.recipes.recipebook.helper.TestObjects;
 import org.recipes.recipebook.model.Ingredient;
 import org.recipes.recipebook.repository.IngredientRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
@@ -74,5 +80,15 @@ public class IngredientServiceTest {
 
     assertEquals(TestObjects.ingredient, foundIngredient);
     verify(ingredientRepository, times(1)).findById(TestObjects .ingredientId);
+  }
+
+  @Test
+  void getIngredientById_ShouldThrow404_WhenMissing() {
+    UUID missingId = UUID.randomUUID();
+    when(this.ingredientRepository.findById(missingId)).thenReturn(Optional.empty());
+
+    ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+        () -> ingredientService.getIngredientById(missingId));
+    assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
   }
 }
