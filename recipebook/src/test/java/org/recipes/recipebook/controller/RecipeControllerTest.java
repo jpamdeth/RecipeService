@@ -114,7 +114,7 @@ public class RecipeControllerTest {
         .content(TestObjects.recipeIngredientListBytes))
         .andExpect(status().isOk());
 
-    verify(this.service).addIngredientsToRecipe(TestObjects.recipeIngredientList);
+    verify(this.service).addIngredientsToRecipe(TestObjects.recipeId, TestObjects.recipeIngredientList);
   }
 
   @Test

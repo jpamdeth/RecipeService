@@ -49,7 +49,18 @@ public class RecipeService {
         return recipeRepository.findAll();
     }
 
-    public void addIngredientsToRecipe(@NonNull List<RecipeIngredient> recipeIngredients) {
+    public void addIngredientsToRecipe(@NonNull UUID recipeId, @NonNull List<RecipeIngredient> recipeIngredients) {
+        // Each body element carries its own recipeId; reject any that disagree with the path
+        // so a caller cannot attach ingredients to an arbitrary recipe via a crafted payload.
+        for (RecipeIngredient ri : recipeIngredients) {
+            if (ri.getRecipeId() == null) {
+                ri.setRecipeId(recipeId);
+            } else if (!ri.getRecipeId().equals(recipeId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "RecipeIngredient.recipeId " + ri.getRecipeId()
+                        + " does not match path id " + recipeId);
+            }
+        }
         recipeIngredientRepository.saveAll(recipeIngredients);
     }
 

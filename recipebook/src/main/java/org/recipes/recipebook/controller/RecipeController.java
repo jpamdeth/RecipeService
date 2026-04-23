@@ -55,7 +55,7 @@ public class RecipeController {
 
     @PostMapping("/{id}/ingredients")
     public void addIngredientsToRecipe(@PathVariable UUID id, @RequestBody List<RecipeIngredient> ingredients) {
-        recipeService.addIngredientsToRecipe(ingredients);
+        recipeService.addIngredientsToRecipe(id, ingredients);
     }
 
     @PostMapping("/{id}/make")

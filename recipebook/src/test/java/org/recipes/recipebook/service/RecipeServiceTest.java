@@ -100,7 +100,7 @@ class RecipeServiceTest {
     void addIngredientsToRecipe_ShouldAddIngredients() {
         when(recipeIngredientRepository.saveAll(TestObjects.recipeIngredientList)).thenReturn(TestObjects.recipeIngredientList);
 
-        recipeService.addIngredientsToRecipe(TestObjects.recipeIngredientList);
+        recipeService.addIngredientsToRecipe(TestObjects.recipeId, TestObjects.recipeIngredientList);
 
         verify(recipeIngredientRepository, times(1)).saveAll(TestObjects.recipeIngredientList);
     }
