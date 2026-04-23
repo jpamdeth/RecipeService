@@ -7,6 +7,8 @@ import org.recipes.recipebook.model.Recipe;
 import org.recipes.recipebook.model.RecipeIngredient;
 import org.recipes.recipebook.repository.RecipeIngredientRepository;
 import org.recipes.recipebook.repository.RecipeRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,8 @@ import lombok.NonNull;
 
 @Service
 public class RecipeService {
+    private static final Logger log = LoggerFactory.getLogger(RecipeService.class);
+
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
     private final IngredientService ingredientService;
@@ -68,6 +72,7 @@ public class RecipeService {
     public void makeRecipe(@NonNull UUID id) {
         List<RecipeIngredient> ingredients = recipeIngredientRepository.findRecipeIngredientsByRecipeId(id);
         if (ingredients.isEmpty()) {
+            log.warn("makeRecipe: recipe {} has no ingredients or does not exist", id);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Recipe " + id + " has no ingredients or does not exist");
         }
@@ -76,6 +81,8 @@ public class RecipeService {
                 ingredient.getIngredientId(), ingredient.getAmount(), ingredient.getUnit());
             if (rowsUpdated == 0) {
                 // Rolls back the whole transaction — partial stock consumption would corrupt the pantry.
+                log.error("makeRecipe: insufficient stock or unit mismatch for ingredient {} (recipe {}, requested {} {})",
+                    ingredient.getIngredientId(), id, ingredient.getAmount(), ingredient.getUnit());
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Insufficient stock or unit mismatch for ingredient " + ingredient.getIngredientId());
             }
