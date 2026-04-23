@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.http.HttpStatus;
 
+import jakarta.validation.Valid;
+
 @RestController()
 @RequestMapping("/recipes")
 public class RecipeController {
@@ -38,12 +40,12 @@ public class RecipeController {
     }
     
     @PostMapping("")
-    public Recipe createRecipe(@RequestBody Recipe recipe) {
+    public Recipe createRecipe(@Valid @RequestBody Recipe recipe) {
         return recipeService.createRecipe(recipe);
     }
 
     @PutMapping("/{id}")
-    public Recipe updateRecipe(@PathVariable UUID id, @RequestBody Recipe recipe) {
+    public Recipe updateRecipe(@PathVariable UUID id, @Valid @RequestBody Recipe recipe) {
         return recipeService.updateRecipe(recipe, id);
     }
 
@@ -54,7 +56,7 @@ public class RecipeController {
     }
 
     @PostMapping("/{id}/ingredients")
-    public void addIngredientsToRecipe(@PathVariable UUID id, @RequestBody List<RecipeIngredient> ingredients) {
+    public void addIngredientsToRecipe(@PathVariable UUID id, @Valid @RequestBody List<@Valid RecipeIngredient> ingredients) {
         recipeService.addIngredientsToRecipe(id, ingredients);
     }
 

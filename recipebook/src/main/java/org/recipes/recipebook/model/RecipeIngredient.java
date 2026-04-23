@@ -10,6 +10,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,8 +34,10 @@ public class RecipeIngredient {
     private UUID ingredientId;
 
     @Column(name = "amount")
+    @Positive
     private int amount;
 
     @Column(name = "unit")
+    @Size(max = 25)
     private String unit;
 }

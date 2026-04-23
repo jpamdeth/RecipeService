@@ -11,6 +11,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,17 +31,23 @@ public class Ingredient {
     private UUID id;
 
     @Column(name = "name")
+    @NotBlank
+    @Size(max = 50)
     private String name;
 
     @Column(name = "type")
+    @Size(max = 50)
     private String type;
 
     @Column(name = "state")
+    @Size(max = 50)
     private String state;
 
     @Column(name = "amount")
+    @PositiveOrZero
     private int amount;
 
     @Column(name = "unit")
+    @Size(max = 25)
     private String unit;
 }

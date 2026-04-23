@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 @RestController()
 @RequestMapping("/ingredients")
 public class IngredientController {
@@ -36,12 +38,12 @@ public class IngredientController {
     }
 
     @PostMapping("")
-    public Ingredient createIngredient(@RequestBody Ingredient ingredient) {
+    public Ingredient createIngredient(@Valid @RequestBody Ingredient ingredient) {
         return ingredientService.createIngredient(ingredient);
     }
 
     @PutMapping("/{id}")
-    public Ingredient updateIngredient(@PathVariable UUID id, @RequestBody Ingredient ingredient) {
+    public Ingredient updateIngredient(@PathVariable UUID id, @Valid @RequestBody Ingredient ingredient) {
         return ingredientService.updateIngredient(ingredient, id);
     }
 
