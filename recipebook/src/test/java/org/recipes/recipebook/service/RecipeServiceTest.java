@@ -87,7 +87,8 @@ class RecipeServiceTest {
     @Test
     void makeRecipe_ShouldUseIngredients() {
         when(recipeIngredientRepository.findRecipeIngredientsByRecipeId(TestObjects.recipeId)).thenReturn(TestObjects.recipeIngredientList);
-        doNothing().when(ingredientService).useIngredient(any(), anyInt(), anyString());
+        // useIngredient returns the JPA update row count — 1 means the stock was successfully decremented.
+        when(ingredientService.useIngredient(any(), anyInt(), anyString())).thenReturn(1);
 
         recipeService.makeRecipe(TestObjects.recipeId);
 

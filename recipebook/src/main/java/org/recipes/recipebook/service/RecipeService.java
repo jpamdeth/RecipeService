@@ -56,8 +56,18 @@ public class RecipeService {
     @Transactional
     public void makeRecipe(@NonNull UUID id) {
         List<RecipeIngredient> ingredients = recipeIngredientRepository.findRecipeIngredientsByRecipeId(id);
+        if (ingredients.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Recipe " + id + " has no ingredients or does not exist");
+        }
         for (RecipeIngredient ingredient : ingredients) {
-            ingredientService.useIngredient(ingredient.getIngredientId(), ingredient.getAmount(), ingredient.getUnit());
+            int rowsUpdated = ingredientService.useIngredient(
+                ingredient.getIngredientId(), ingredient.getAmount(), ingredient.getUnit());
+            if (rowsUpdated == 0) {
+                // Rolls back the whole transaction — partial stock consumption would corrupt the pantry.
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Insufficient stock or unit mismatch for ingredient " + ingredient.getIngredientId());
+            }
         }
     }
 }

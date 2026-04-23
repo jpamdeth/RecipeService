@@ -43,7 +43,12 @@ public class IngredientService {
         ingredientRepository.deleteById(id);
     }
 
-    public void useIngredient(@NonNull UUID id, int amount, String unit) {
-        ingredientRepository.useIngredient(id, amount, unit);
+    /**
+     * Decrement the stock of an ingredient atomically.
+     * Returns the number of rows updated — 0 means the row was missing, the
+     * unit did not match, or stock was insufficient.
+     */
+    public int useIngredient(@NonNull UUID id, int amount, String unit) {
+        return ingredientRepository.useIngredient(id, amount, unit);
     }
 }

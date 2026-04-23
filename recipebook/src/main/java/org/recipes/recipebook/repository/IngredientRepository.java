@@ -11,7 +11,15 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface IngredientRepository extends JpaRepository<Ingredient, UUID>{
 
+    /**
+     * Atomically decrements the stock of an ingredient when its unit matches.
+     * The amount >= :amount guard prevents the row from going negative; the
+     * caller can detect "not enough stock" via the returned row count (0 = no-op).
+     *
+     * @return number of rows updated (0 if stock was insufficient, unit mismatched, or id missing)
+     */
     @Modifying
-    @Query("UPDATE Ingredient i SET i.amount = i.amount - :amount WHERE i.id = :id AND i.unit = :unit")
-    public void useIngredient(UUID id, int amount, String unit);
+    @Query("UPDATE Ingredient i SET i.amount = i.amount - :amount "
+         + "WHERE i.id = :id AND i.unit = :unit AND i.amount >= :amount")
+    int useIngredient(UUID id, int amount, String unit);
 }
