@@ -7,8 +7,10 @@ import org.recipes.recipebook.model.Recipe;
 import org.recipes.recipebook.model.RecipeIngredient;
 import org.recipes.recipebook.repository.RecipeIngredientRepository;
 import org.recipes.recipebook.repository.RecipeRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import lombok.NonNull;
 
@@ -29,7 +31,8 @@ public class RecipeService {
     }
 
     public Recipe getRecipeById(@NonNull UUID id) {
-        return recipeRepository.findById(id).orElse(null);
+        return recipeRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe " + id + " not found"));
     }
 
     public void deleteRecipeById(@NonNull UUID id) {

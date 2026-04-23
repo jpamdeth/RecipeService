@@ -2,7 +2,9 @@ package org.recipes.recipebook.service;
 
 import org.recipes.recipebook.model.Ingredient;
 import org.recipes.recipebook.repository.IngredientRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import lombok.NonNull;
 
@@ -23,7 +25,8 @@ public class IngredientService {
     }
 
     public Ingredient getIngredientById(@NonNull UUID id) {
-        return ingredientRepository.findById(id).orElse(null);
+        return ingredientRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ingredient " + id + " not found"));
     }
 
     public Ingredient createIngredient(@NonNull Ingredient ingredient) {
