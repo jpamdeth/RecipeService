@@ -1,0 +1,42 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Gradle / build artifacts
+.gradle
+build/
+out/
+target/
+
+# IDE / editor
+.idea
+*.iml
+*.ipr
+*.iws
+.vscode
+.classpath
+.project
+.settings
+.apt_generated
+.factorypath
+.springBeans
+.sts4-cache
+
+# Env and secrets (never ship credentials into an image layer)
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.sample
+
+# Compose-local files that don't belong in the image
+compose.yaml
+docker-compose.yml
+docker-compose.yaml
+schema.sql
+
+# Misc
+*.log
+HELP.md
+README.md

@@ -12,7 +12,12 @@ import org.recipes.recipebook.helper.TestObjects;
 import org.recipes.recipebook.model.Recipe;
 import org.recipes.recipebook.repository.RecipeIngredientRepository;
 import org.recipes.recipebook.repository.RecipeRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Collections;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
@@ -87,7 +92,8 @@ class RecipeServiceTest {
     @Test
     void makeRecipe_ShouldUseIngredients() {
         when(recipeIngredientRepository.findRecipeIngredientsByRecipeId(TestObjects.recipeId)).thenReturn(TestObjects.recipeIngredientList);
-        doNothing().when(ingredientService).useIngredient(any(), anyInt(), anyString());
+        // useIngredient returns the JPA update row count — 1 means the stock was successfully decremented.
+        when(ingredientService.useIngredient(any(), anyInt(), anyString())).thenReturn(1);
 
         recipeService.makeRecipe(TestObjects.recipeId);
 
@@ -96,10 +102,54 @@ class RecipeServiceTest {
     }
 
     @Test
+    void getRecipeById_ShouldThrow404_WhenMissing() {
+        UUID missingId = UUID.randomUUID();
+        when(recipeRepository.findById(missingId)).thenReturn(java.util.Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> recipeService.getRecipeById(missingId));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void makeRecipe_ShouldThrow404_WhenNoIngredients() {
+        when(recipeIngredientRepository.findRecipeIngredientsByRecipeId(TestObjects.recipeId))
+            .thenReturn(Collections.emptyList());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> recipeService.makeRecipe(TestObjects.recipeId));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        // nothing should be decremented when the recipe is empty/missing
+        verify(ingredientService, never()).useIngredient(any(), anyInt(), anyString());
+    }
+
+    @Test
+    void makeRecipe_ShouldThrow409_WhenStockInsufficient() {
+        when(recipeIngredientRepository.findRecipeIngredientsByRecipeId(TestObjects.recipeId))
+            .thenReturn(TestObjects.recipeIngredientList);
+        // 0 rows updated → stock was insufficient or unit mismatched
+        when(ingredientService.useIngredient(any(), anyInt(), anyString())).thenReturn(0);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> recipeService.makeRecipe(TestObjects.recipeId));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+    }
+
+    @Test
+    void addIngredientsToRecipe_ShouldReject_WhenBodyRecipeIdMismatchesPath() {
+        UUID otherRecipeId = UUID.randomUUID();
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> recipeService.addIngredientsToRecipe(otherRecipeId, TestObjects.recipeIngredientList));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        verify(recipeIngredientRepository, never()).saveAll(anyList());
+    }
+
+    @Test
     void addIngredientsToRecipe_ShouldAddIngredients() {
         when(recipeIngredientRepository.saveAll(TestObjects.recipeIngredientList)).thenReturn(TestObjects.recipeIngredientList);
 
-        recipeService.addIngredientsToRecipe(TestObjects.recipeIngredientList);
+        recipeService.addIngredientsToRecipe(TestObjects.recipeId, TestObjects.recipeIngredientList);
 
         verify(recipeIngredientRepository, times(1)).saveAll(TestObjects.recipeIngredientList);
     }

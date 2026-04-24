@@ -15,6 +15,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,15 +35,20 @@ public class Recipe {
     private UUID id;
     
     @Column(name = "title")
+    @NotBlank
+    @Size(max = 100)
     private String title;
 
     @Column(name = "description")
+    @Size(max = 255)
     private String description;
 
     @Column(name = "category")
+    @Size(max = 100)
     private String category;
 
     @Column(name = "directions")
+    @Size(max = 2000)
     private String directions;
 
     @ManyToMany
