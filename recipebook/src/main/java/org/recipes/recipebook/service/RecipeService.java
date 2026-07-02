@@ -9,6 +9,8 @@ import org.recipes.recipebook.repository.RecipeIngredientRepository;
 import org.recipes.recipebook.repository.RecipeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,8 +51,8 @@ public class RecipeService {
         return recipeRepository.save(recipe);
     }
 
-    public Iterable<Recipe> getAllRecipes() {
-        return recipeRepository.findAll();
+    public Page<Recipe> getAllRecipes(@NonNull Pageable pageable) {
+        return recipeRepository.findAll(pageable);
     }
 
     public void addIngredientsToRecipe(@NonNull UUID recipeId, @NonNull List<RecipeIngredient> recipeIngredients) {

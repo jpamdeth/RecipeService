@@ -2,13 +2,14 @@ package org.recipes.recipebook.service;
 
 import org.recipes.recipebook.model.Ingredient;
 import org.recipes.recipebook.repository.IngredientRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import lombok.NonNull;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -20,8 +21,8 @@ public class IngredientService {
         this.ingredientRepository = ingredientRepository;
     }
 
-    public List<Ingredient> getAllIngredients() {
-        return ingredientRepository.findAll();
+    public Page<Ingredient> getAllIngredients(@NonNull Pageable pageable) {
+        return ingredientRepository.findAll(pageable);
     }
 
     public Ingredient getIngredientById(@NonNull UUID id) {

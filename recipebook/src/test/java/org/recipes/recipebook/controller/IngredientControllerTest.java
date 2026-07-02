@@ -1,5 +1,7 @@
 package org.recipes.recipebook.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -7,6 +9,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,8 @@ import org.recipes.recipebook.service.IngredientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -48,11 +54,26 @@ public class IngredientControllerTest {
     mvc.perform(post("/ingredients")
         .contentType(MediaType.APPLICATION_JSON)
         .content(TestObjects.ingredientBytes))
-        .andExpect(status().isOk())
+        .andExpect(status().isCreated())
+        .andExpect(header().string("Location", "http://localhost/ingredients/" + TestObjects.ingredientId))
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(TestObjects.ingredientString));
 
     verify(this.service).createIngredient(TestObjects.ingredient);
+  }
+
+  @Test
+  public void createIngredientValidationFailure()
+  throws Exception {
+    mvc.perform(post("/ingredients")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"name\":\"\",\"amount\":-1}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.title").value("Bad Request"))
+        .andExpect(jsonPath("$.detail").value("Validation failed"))
+        .andExpect(jsonPath("$.errors").isArray());
   }
 
     @Test
@@ -71,16 +92,38 @@ public class IngredientControllerTest {
     }
 
     @Test
+    public void updateIngredientIdMismatch()
+    throws Exception {
+        when(this.service.updateIngredient(any(), eq(TestObjects.ingredientId)))
+            .thenThrow(new IllegalArgumentException("The ingredient id does not match the id provided"));
+
+        mvc.perform(put("/ingredients/" + TestObjects.ingredientId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(TestObjects.ingredientBytes))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.title").value("Bad Request"))
+            .andExpect(jsonPath("$.detail").value("The ingredient id does not match the id provided"));
+    }
+
+    @Test
     public void getAllIngredientsSuccess()
     throws Exception {
-        when(this.service.getAllIngredients()).thenReturn(TestObjects.ingredientList);
+        when(this.service.getAllIngredients(PageRequest.of(0, 20)))
+            .thenReturn(new PageImpl<>(TestObjects.ingredientList, PageRequest.of(0, 20), 1));
 
-        mvc.perform(get("/ingredients"))
+        mvc.perform(get("/ingredients?page=0&size=20"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().json(TestObjects.ingredientListString));
+            .andExpect(jsonPath("$.content[0].id").value(TestObjects.ingredientId.toString()))
+            .andExpect(jsonPath("$.content[0].name").value(TestObjects.ingredient.getName()))
+            .andExpect(jsonPath("$.page").value(0))
+            .andExpect(jsonPath("$.size").value(20))
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.totalPages").value(1));
 
-        verify(this.service).getAllIngredients();
+        verify(this.service).getAllIngredients(PageRequest.of(0, 20));
     }
 
     @Test

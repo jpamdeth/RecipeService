@@ -12,6 +12,9 @@ import org.recipes.recipebook.helper.TestObjects;
 import org.recipes.recipebook.model.Recipe;
 import org.recipes.recipebook.repository.RecipeIngredientRepository;
 import org.recipes.recipebook.repository.RecipeRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
@@ -80,13 +83,15 @@ class RecipeServiceTest {
 
     @Test
     void getAllRecipes_ShouldReturnAllRecipes() {
-        when(recipeRepository.findAll()).thenReturn(TestObjects.recipes);
+        PageRequest pageable = PageRequest.of(0, 20);
+        Page<Recipe> page = new PageImpl<>(TestObjects.recipes, pageable, TestObjects.recipes.size());
+        when(recipeRepository.findAll(pageable)).thenReturn(page);
 
-        Iterable<Recipe> allRecipes = recipeService.getAllRecipes();
+        Page<Recipe> allRecipes = recipeService.getAllRecipes(pageable);
 
         assertNotNull(allRecipes);
-        assertEquals(TestObjects.recipes, allRecipes);
-        verify(recipeRepository, times(1)).findAll();
+        assertEquals(TestObjects.recipes, allRecipes.getContent());
+        verify(recipeRepository, times(1)).findAll(pageable);
     }
 
     @Test

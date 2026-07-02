@@ -18,6 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.recipes.recipebook.helper.TestObjects;
 import org.recipes.recipebook.model.Ingredient;
 import org.recipes.recipebook.repository.IngredientRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
@@ -64,12 +67,14 @@ public class IngredientServiceTest {
 
   @Test
   void getAllIngredients_ShouldReturnAllIngredients() {
-    when(this.ingredientRepository.findAll()).thenReturn(TestObjects.ingredientList);
+    PageRequest pageable = PageRequest.of(0, 20);
+    Page<Ingredient> page = new PageImpl<>(TestObjects.ingredientList, pageable, TestObjects.ingredientList.size());
+    when(this.ingredientRepository.findAll(pageable)).thenReturn(page);
 
-    Iterable<Ingredient> ingredients = ingredientService.getAllIngredients();
+    Page<Ingredient> ingredients = ingredientService.getAllIngredients(pageable);
 
-    assertEquals(TestObjects.ingredientList, ingredients);
-    verify(ingredientRepository, times(1)).findAll();
+    assertEquals(TestObjects.ingredientList, ingredients.getContent());
+    verify(ingredientRepository, times(1)).findAll(pageable);
   }
 
   @Test

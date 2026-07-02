@@ -1,13 +1,13 @@
 package org.recipes.recipebook;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @SpringBootTest(
   webEnvironment = SpringBootTest.WebEnvironment.MOCK,
@@ -46,7 +47,7 @@ public class IntegrationTest {
     MvcResult result = mvc.perform(post("/recipes")
       .contentType(MediaType.APPLICATION_JSON)
       .content(NEW_RECIPE_JSON))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(content().contentType(MediaType.APPLICATION_JSON))
       .andReturn();
 
@@ -58,28 +59,32 @@ public class IntegrationTest {
       .andReturn();
 
     Recipe retrieved = mapper.readValue(result.getResponse().getContentAsString(), Recipe.class);
-    assert(recipe1.equals(retrieved));
+    assertEquals(recipe1, retrieved);
 
     result = mvc.perform(post("/recipes")
       .contentType(MediaType.APPLICATION_JSON)
       .content(NEW_RECIPE_JSON))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(content().contentType(MediaType.APPLICATION_JSON))
       .andReturn();
 
     Recipe recipe2 = mapper.readValue(result.getResponse().getContentAsString(), Recipe.class);
 
-    result = mvc.perform(get("/recipes"))
+    result = mvc.perform(get("/recipes?page=0&size=20"))
       .andExpect(status().isOk())
       .andExpect(content().contentType(MediaType.APPLICATION_JSON))
       .andReturn();
 
-    Recipe[] recipes = mapper.readValue(result.getResponse().getContentAsString(), Recipe[].class);
+    JsonNode recipesPage = mapper.readTree(result.getResponse().getContentAsString());
+    Recipe[] recipes = mapper.treeToValue(recipesPage.get("content"), Recipe[].class);
 
-    assert(recipes.length == 2);
-    List<Recipe> recipeList = Arrays.asList(recipes);
-    assert(recipeList.contains(recipe1));
-    assert(recipeList.contains(recipe2));
+    assertEquals(2, recipes.length);
+    List<Recipe> recipeList = List.of(recipes);
+    assertTrue(recipeList.contains(recipe1));
+    assertTrue(recipeList.contains(recipe2));
+    assertEquals(0, recipesPage.get("page").asInt());
+    assertEquals(20, recipesPage.get("size").asInt());
+    assertEquals(2, recipesPage.get("totalElements").asInt());
 
     // Refresh recipe1 from the database state before updating
     result = mvc.perform(get("/recipes/" + recipe1.getId().toString()))
