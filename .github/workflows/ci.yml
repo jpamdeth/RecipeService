@@ -16,25 +16,28 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
           java-version: "21"
+          check-latest: true
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6.4.1
+        with:
+          cache-provider: basic
 
       - name: Pull MySQL test image
         run: docker pull mysql:8.0
 
-      - name: Run tests
-        run: ./gradlew test
+      - name: Build and test
+        run: ./gradlew build
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: jacoco-html-report
           path: recipebook/build/reports/jacoco/test/html

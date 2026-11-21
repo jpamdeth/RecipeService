@@ -17,10 +17,10 @@ RecipeService is a Spring Boot REST API for managing recipes, pantry ingredients
 
 | Area | Technology |
 | --- | --- |
-| Runtime | Java 21, Spring Boot 3.5 |
+| Runtime | Java 21, Spring Boot 4.2 |
 | API | Spring MVC, Bean Validation, springdoc-openapi |
 | Persistence | Spring Data JPA, MySQL 8, Flyway |
-| Tests | JUnit 5, MockMvc, H2, Mockito, Testcontainers, JaCoCo |
+| Tests | JUnit 6, MockMvc, H2, Mockito, Testcontainers, JaCoCo |
 | Local runtime | Docker Compose |
 | CI | GitHub Actions |
 
