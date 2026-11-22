@@ -49,17 +49,31 @@ public class IngredientControllerTest {
   @Test
   public void createIngredientSuccess()
   throws Exception {
-    when(this.service.createIngredient(TestObjects.ingredient)).thenReturn(TestObjects.ingredient);
+    when(this.service.createIngredient(TestObjects.newIngredient)).thenReturn(TestObjects.ingredient);
 
     mvc.perform(post("/ingredients")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(TestObjects.ingredientBytes))
+        .content("""
+            {"name":"Test Ingredient","type":"Test Type","state":"Test State","amount":1,"unit":"Test Unit"}
+            """))
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", "http://localhost/ingredients/" + TestObjects.ingredientId))
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(TestObjects.ingredientString));
 
-    verify(this.service).createIngredient(TestObjects.ingredient);
+    verify(this.service).createIngredient(TestObjects.newIngredient);
+  }
+
+  @Test
+  void malformedBodyReturnsProblemDetail() throws Exception {
+    mvc.perform(post("/ingredients")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.instance").value("/ingredients"))
+        .andExpect(jsonPath("$.detail").value("Send a valid JSON body that matches this endpoint's request format."));
   }
 
   @Test

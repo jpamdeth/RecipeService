@@ -102,7 +102,7 @@ build/reports/jacoco/test/html/index.html
 
 ## API Examples
 
-Create an ingredient:
+Create an ingredient without a body ID. The server assigns the ID. Requests that supply an ID return `400 Bad Request`.
 
 ```bash
 curl -i -X POST http://localhost:8080/ingredients \
@@ -171,11 +171,11 @@ If stock is insufficient or units do not match, the API returns `409 Conflict`.
 | `GET` | `/ingredients/{id}` | Get one ingredient |
 | `POST` | `/ingredients` | Create an ingredient |
 | `PUT` | `/ingredients/{id}` | Update an ingredient |
-| `DELETE` | `/ingredients/{id}` | Delete an ingredient |
+| `DELETE` | `/ingredients/{id}` | Delete an ingredient. Returns `409 Conflict` while a recipe uses it |
 
 ## Error Format
 
-Errors use Spring's RFC 7807 `ProblemDetail` format. Validation errors include an `errors` extension:
+Errors use Spring's `ProblemDetail` format, including malformed JSON. Validation errors include an `errors` extension:
 
 ```json
 {

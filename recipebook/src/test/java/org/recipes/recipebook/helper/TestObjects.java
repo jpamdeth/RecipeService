@@ -22,6 +22,7 @@ public class TestObjects {
 
     public static UUID ingredientId = UUID.randomUUID();
     public static Ingredient ingredient = new Ingredient(ingredientId, "Test Ingredient", "Test Type", "Test State", 1, "Test Unit");
+    public static Ingredient newIngredient = new Ingredient(null, "Test Ingredient", "Test Type", "Test State", 1, "Test Unit");
     public static String ingredientString = "{\"id\": \"" + ingredientId.toString() + "\", \"name\": \"Test Ingredient\", \"type\": \"Test Type\", \"state\": \"Test State\", \"amount\": 1, \"unit\": \"Test Unit\"}";
     public static byte[] ingredientBytes = ingredientString.getBytes();
 

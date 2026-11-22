@@ -1,8 +1,10 @@
 package org.recipes.recipebook;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -10,6 +12,8 @@ import java.net.URI;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -108,6 +112,33 @@ class MySqlIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ingredients.length()").value(0));
         mvc.perform(get(recipePath)).andExpect(jsonPath("$.ingredients.length()").value(0));
+        mvc.perform(delete(ingredientPath)).andExpect(status().isNoContent());
+        mvc.perform(get(ingredientPath)).andExpect(status().isNotFound());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CHEESE, "ab7ff905-2db5-48fc-be4a-504f99dd7391"})
+    void ingredientCreationRejectsClientIds(String id) throws Exception {
+        mvc.perform(post("/ingredients").contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"id":"%s","name":"Replacement cheese","amount":1,"unit":"slices"}
+                """.formatted(id)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("Omit the id when creating an ingredient. The server assigns it."));
+        mvc.perform(get("/ingredients/" + CHEESE))
+            .andExpect(jsonPath("$.name").value("cheese"))
+            .andExpect(jsonPath("$.amount").value(12));
+    }
+
+    @Test
+    void deletingAReferencedIngredientReturnsConflictAndKeepsTheLink() throws Exception {
+        mvc.perform(delete("/ingredients/" + CHEESE))
+            .andExpect(status().isConflict())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("Remove this ingredient from its recipes before deleting it."));
+        mvc.perform(get("/recipes/" + SEEDED_RECIPE))
+            .andExpect(jsonPath("$.ingredients.length()").value(2));
     }
 
     @Test
