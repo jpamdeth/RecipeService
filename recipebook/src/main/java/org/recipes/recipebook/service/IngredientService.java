@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import lombok.NonNull;
@@ -34,10 +35,17 @@ public class IngredientService {
         return ingredientRepository.save(ingredient);
     }
 
+    @Transactional
     public Ingredient updateIngredient(Ingredient ingredient, UUID id) {
-        if (!ingredient.getId().equals(id))
+        if (ingredient.getId() != null && !id.equals(ingredient.getId()))
             throw new IllegalArgumentException("The ingredient id does not match the id provided");
-        return ingredientRepository.save(ingredient);
+        Ingredient existing = getIngredientById(id);
+        existing.setName(ingredient.getName());
+        existing.setType(ingredient.getType());
+        existing.setState(ingredient.getState());
+        existing.setAmount(ingredient.getAmount());
+        existing.setUnit(ingredient.getUnit());
+        return existing;
     }
 
     public void deleteIngredient(@NonNull UUID id) {

@@ -48,12 +48,10 @@ public class IngredientServiceTest {
 
   @Test
   void updateIngredient_ShouldReturnUpdatedIngredient() {
-    when(ingredientRepository.save(TestObjects.ingredient)).thenReturn(TestObjects.ingredient);
-
+    Ingredient existing = new Ingredient(TestObjects.ingredientId, "Old name", null, null, 0, null);
+    when(ingredientRepository.findById(TestObjects.ingredientId)).thenReturn(Optional.of(existing));
     Ingredient updatedIngredient = ingredientService.updateIngredient(TestObjects.ingredient, TestObjects.ingredientId);
-
     assertEquals(TestObjects.ingredient, updatedIngredient);
-    verify(ingredientRepository, times(1)).save(TestObjects.ingredient);
   }
 
   @Test

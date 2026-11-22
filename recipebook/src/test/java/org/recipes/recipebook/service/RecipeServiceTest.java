@@ -3,6 +3,10 @@ package org.recipes.recipebook.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -10,21 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.recipes.recipebook.helper.TestObjects;
 import org.recipes.recipebook.model.Recipe;
-import org.recipes.recipebook.repository.RecipeIngredientRepository;
+import org.recipes.recipebook.model.RecipeIngredient;
 import org.recipes.recipebook.repository.RecipeRepository;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Collections;
-import java.util.UUID;
-
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
-@SuppressWarnings("null")
 class RecipeServiceTest {
 
     @Mock
@@ -33,129 +30,104 @@ class RecipeServiceTest {
     @Mock
     private IngredientService ingredientService;
 
-    @Mock
-    private RecipeIngredientRepository recipeIngredientRepository;
-
     @InjectMocks
     private RecipeService recipeService;
 
     @Test
-    void createRecipe_ShouldReturnCreatedRecipe() {
-        when(recipeRepository.save(TestObjects.recipe)).thenReturn(TestObjects.recipe);
-
-        Recipe createdRecipe = recipeService.createRecipe(TestObjects.recipe);
-
-        assertNotNull(createdRecipe);
-        assertEquals(TestObjects.recipe.getTitle(), createdRecipe.getTitle());
-        verify(recipeRepository, times(1)).save(TestObjects.recipe);
+    void createsRecipe() {
+        when(recipeRepository.save(any(Recipe.class))).thenAnswer(call -> call.getArgument(0));
+        Recipe created = recipeService.createRecipe(TestObjects.recipeRequest);
+        assertEquals(TestObjects.recipe.getTitle(), created.getTitle());
+        verify(recipeRepository).save(created);
     }
 
     @Test
-    void getRecipeById_ShouldReturnRecipe() {
-        when(recipeRepository.findById(TestObjects.recipeId)).thenReturn(java.util.Optional.of(TestObjects.recipe));
-
-        Recipe foundRecipe = recipeService.getRecipeById(TestObjects.recipeId);
-
-        assertNotNull(foundRecipe);
-        assertEquals(TestObjects.recipe.getTitle(), foundRecipe.getTitle());
-        verify(recipeRepository, times(1)).findById(TestObjects.recipeId);
+    void getsRecipeById() {
+        when(recipeRepository.findById(TestObjects.recipeId)).thenReturn(Optional.of(TestObjects.recipe));
+        assertEquals(TestObjects.recipe, recipeService.getRecipeById(TestObjects.recipeId));
     }
 
     @Test
-    void deleteRecipeById_ShouldDeleteRecipe() {
-        doNothing().when(recipeRepository).deleteById(TestObjects.recipeId);
+    void reportsMissingRecipe() {
+        UUID id = UUID.randomUUID();
+        when(recipeRepository.findById(id)).thenReturn(Optional.empty());
+        var error = assertThrows(ResponseStatusException.class, () -> recipeService.getRecipeById(id));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+    }
 
+    @Test
+    void deletesRecipeById() {
         recipeService.deleteRecipeById(TestObjects.recipeId);
-
-        verify(recipeRepository, times(1)).deleteById(TestObjects.recipeId);
+        verify(recipeRepository).deleteById(TestObjects.recipeId);
     }
 
     @Test
-    void updateRecipe_ShouldReturnUpdatedRecipe() {
-        when(recipeRepository.save(TestObjects.recipe)).thenReturn(TestObjects.recipe);
-
-        Recipe updatedRecipe = recipeService.updateRecipe(TestObjects.recipe, TestObjects.recipeId);
-
-        assertNotNull(updatedRecipe);
-        assertEquals(TestObjects.recipe.getTitle(), updatedRecipe.getTitle());
-        verify(recipeRepository, times(1)).save(TestObjects.recipe);
+    void updatesRecipe() {
+        Recipe existing = recipeForUpdate(TestObjects.recipeId);
+        assertSame(existing, recipeService.updateRecipe(TestObjects.recipeRequest, TestObjects.recipeId));
+        assertEquals(TestObjects.recipe.getTitle(), existing.getTitle());
     }
 
     @Test
-    void getAllRecipes_ShouldReturnAllRecipes() {
-        PageRequest pageable = PageRequest.of(0, 20);
-        Page<Recipe> page = new PageImpl<>(TestObjects.recipes, pageable, TestObjects.recipes.size());
-        when(recipeRepository.findAll(pageable)).thenReturn(page);
-
-        Page<Recipe> allRecipes = recipeService.getAllRecipes(pageable);
-
-        assertNotNull(allRecipes);
-        assertEquals(TestObjects.recipes, allRecipes.getContent());
-        verify(recipeRepository, times(1)).findAll(pageable);
+    void getsPageOfRecipes() {
+        var pageable = PageRequest.of(0, 20);
+        when(recipeRepository.findAll(pageable)).thenReturn(new PageImpl<>(TestObjects.recipes, pageable, 1));
+        assertEquals(TestObjects.recipes, recipeService.getAllRecipes(pageable).getContent());
     }
 
     @Test
-    void makeRecipe_ShouldUseIngredients() {
-        when(recipeIngredientRepository.findRecipeIngredientsByRecipeId(TestObjects.recipeId)).thenReturn(TestObjects.recipeIngredientList);
-        // useIngredient returns the JPA update row count — 1 means the stock was successfully decremented.
-        when(ingredientService.useIngredient(any(), anyInt(), anyString())).thenReturn(1);
+    void makesRecipeAndConsumesStock() {
+        Recipe recipe = recipeForUpdate(TestObjects.recipeId);
+        recipe.getIngredients().add(new RecipeIngredient(recipe, TestObjects.ingredient, 1, "Test Unit"));
+        when(ingredientService.useIngredient(TestObjects.ingredientId, 1, "Test Unit")).thenReturn(1);
 
         recipeService.makeRecipe(TestObjects.recipeId);
 
-        verify(recipeIngredientRepository, times(1)).findRecipeIngredientsByRecipeId(TestObjects.recipeId);
-        verify(ingredientService, times(1)).useIngredient(any(), anyInt(), anyString());
+        verify(ingredientService).useIngredient(TestObjects.ingredientId, 1, "Test Unit");
     }
 
     @Test
-    void getRecipeById_ShouldThrow404_WhenMissing() {
-        UUID missingId = UUID.randomUUID();
-        when(recipeRepository.findById(missingId)).thenReturn(java.util.Optional.empty());
-
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-            () -> recipeService.getRecipeById(missingId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    void rejectsMakingRecipeWithoutIngredients() {
+        recipeForUpdate(TestObjects.recipeId);
+        var error = assertThrows(ResponseStatusException.class, () -> recipeService.makeRecipe(TestObjects.recipeId));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verifyNoInteractions(ingredientService);
     }
 
     @Test
-    void makeRecipe_ShouldThrow404_WhenNoIngredients() {
-        when(recipeIngredientRepository.findRecipeIngredientsByRecipeId(TestObjects.recipeId))
-            .thenReturn(Collections.emptyList());
+    void rejectsMakingRecipeWithInsufficientStock() {
+        Recipe recipe = recipeForUpdate(TestObjects.recipeId);
+        recipe.getIngredients().add(new RecipeIngredient(recipe, TestObjects.ingredient, 1, "Test Unit"));
+        when(ingredientService.useIngredient(TestObjects.ingredientId, 1, "Test Unit")).thenReturn(0);
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-            () -> recipeService.makeRecipe(TestObjects.recipeId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-        // nothing should be decremented when the recipe is empty/missing
-        verify(ingredientService, never()).useIngredient(any(), anyInt(), anyString());
+        var error = assertThrows(ResponseStatusException.class, () -> recipeService.makeRecipe(TestObjects.recipeId));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
     }
 
     @Test
-    void makeRecipe_ShouldThrow409_WhenStockInsufficient() {
-        when(recipeIngredientRepository.findRecipeIngredientsByRecipeId(TestObjects.recipeId))
-            .thenReturn(TestObjects.recipeIngredientList);
-        // 0 rows updated → stock was insufficient or unit mismatched
-        when(ingredientService.useIngredient(any(), anyInt(), anyString())).thenReturn(0);
-
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-            () -> recipeService.makeRecipe(TestObjects.recipeId));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
-    }
-
-    @Test
-    void addIngredientsToRecipe_ShouldReject_WhenBodyRecipeIdMismatchesPath() {
+    void rejectsAddingIngredientsToMismatchedRecipeId() {
         UUID otherRecipeId = UUID.randomUUID();
-
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-            () -> recipeService.addIngredientsToRecipe(otherRecipeId, TestObjects.recipeIngredientList));
-        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        verify(recipeIngredientRepository, never()).saveAll(anyList());
+        Recipe recipe = recipeForUpdate(otherRecipeId);
+        assertThrows(IllegalArgumentException.class,
+            () -> recipeService.addIngredientsToRecipe(otherRecipeId, TestObjects.recipeIngredientRequests));
+        assertTrue(recipe.getIngredients().isEmpty());
     }
 
     @Test
-    void addIngredientsToRecipe_ShouldAddIngredients() {
-        when(recipeIngredientRepository.saveAll(TestObjects.recipeIngredientList)).thenReturn(TestObjects.recipeIngredientList);
+    void addsIngredients() {
+        Recipe recipe = recipeForUpdate(TestObjects.recipeId);
+        when(ingredientService.getIngredientById(TestObjects.ingredientId)).thenReturn(TestObjects.ingredient);
 
-        recipeService.addIngredientsToRecipe(TestObjects.recipeId, TestObjects.recipeIngredientList);
+        recipeService.addIngredientsToRecipe(TestObjects.recipeId, TestObjects.recipeIngredientRequests);
 
-        verify(recipeIngredientRepository, times(1)).saveAll(TestObjects.recipeIngredientList);
+        assertEquals(1, recipe.getIngredients().size());
+        assertEquals(TestObjects.ingredientId, recipe.getIngredients().getFirst().getIngredientId());
+    }
+
+    private Recipe recipeForUpdate(UUID id) {
+        Recipe recipe = new Recipe(id, "Old title", null, null, null, new ArrayList<>());
+        when(recipeRepository.findByIdForUpdate(id)).thenReturn(Optional.of(recipe));
+        return recipe;
     }
 }

@@ -85,7 +85,7 @@ public class RecipeControllerTest {
   @Test
   public void createRecipeSuccess()
   throws Exception {
-    when(this.service.createRecipe(TestObjects.recipe)).thenReturn(TestObjects.recipe);
+    when(this.service.createRecipe(TestObjects.recipeRequest)).thenReturn(TestObjects.recipe);
 
     mvc.perform(post("/recipes")
         .contentType(MediaType.APPLICATION_JSON)
@@ -95,7 +95,7 @@ public class RecipeControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(TestObjects.recipeString));
 
-    verify(this.service).createRecipe(TestObjects.recipe);
+    verify(this.service).createRecipe(TestObjects.recipeRequest);
   }
 
   @Test
@@ -115,7 +115,7 @@ public class RecipeControllerTest {
   @Test
   public void updateRecipeSuccess()
   throws Exception {
-    when(this.service.updateRecipe(TestObjects.recipe, TestObjects.recipeId)).thenReturn(TestObjects.recipe);
+    when(this.service.updateRecipe(TestObjects.recipeRequest, TestObjects.recipeId)).thenReturn(TestObjects.recipe);
 
     mvc.perform(put("/recipes/" + TestObjects.recipeId)
         .contentType(MediaType.APPLICATION_JSON)
@@ -124,7 +124,7 @@ public class RecipeControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(TestObjects.recipeString));
 
-    verify(this.service).updateRecipe(TestObjects.recipe, TestObjects.recipeId);
+    verify(this.service).updateRecipe(TestObjects.recipeRequest, TestObjects.recipeId);
   }
 
   @Test
@@ -160,7 +160,7 @@ public class RecipeControllerTest {
         .content(TestObjects.recipeIngredientListBytes))
         .andExpect(status().isOk());
 
-    verify(this.service).addIngredientsToRecipe(TestObjects.recipeId, TestObjects.recipeIngredientList);
+    verify(this.service).addIngredientsToRecipe(TestObjects.recipeId, TestObjects.recipeIngredientRequests);
   }
 
   @Test

@@ -31,10 +31,21 @@ jobs:
           cache-provider: basic
 
       - name: Pull MySQL test image
-        run: docker pull mysql:8.0
+        run: docker pull mysql:8.4
 
       - name: Build and test
         run: ./gradlew build
+
+      - name: Smoke-test Docker Compose
+        env:
+          MYSQL_DATABASE: recipes
+          MYSQL_USER: recipe
+          MYSQL_PASSWORD: ci-app-password
+          MYSQL_ROOT_PASSWORD: ci-root-password
+        run: |
+          trap 'docker compose down --volumes' EXIT
+          docker compose up -d --build --wait --wait-timeout 120
+          curl --fail --silent --show-error http://127.0.0.1:8080/actuator/health
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7.0.2

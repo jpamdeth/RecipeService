@@ -8,10 +8,8 @@ import org.recipes.recipebook.dto.RecipeIngredientRequest;
 import org.recipes.recipebook.dto.RecipeRequest;
 import org.recipes.recipebook.dto.RecipeResponse;
 import org.recipes.recipebook.dto.PageResponse;
-import org.recipes.recipebook.mapper.RecipeIngredientMapper;
 import org.recipes.recipebook.mapper.RecipeMapper;
 import org.recipes.recipebook.model.Recipe;
-import org.recipes.recipebook.model.RecipeIngredient;
 import org.recipes.recipebook.service.RecipeService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -54,7 +52,7 @@ public class RecipeController {
     
     @PostMapping("")
     public ResponseEntity<RecipeResponse> createRecipe(@Valid @RequestBody RecipeRequest recipe) {
-        Recipe created = recipeService.createRecipe(RecipeMapper.toEntity(recipe));
+        Recipe created = recipeService.createRecipe(recipe);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(created.getId())
@@ -66,7 +64,7 @@ public class RecipeController {
 
     @PutMapping("/{id}")
     public RecipeResponse updateRecipe(@PathVariable UUID id, @Valid @RequestBody RecipeRequest recipe) {
-        Recipe updated = recipeService.updateRecipe(RecipeMapper.toEntity(recipe), id);
+        Recipe updated = recipeService.updateRecipe(recipe, id);
         return RecipeMapper.toResponse(updated);
     }
 
@@ -78,10 +76,7 @@ public class RecipeController {
 
     @PostMapping("/{id}/ingredients")
     public void addIngredientsToRecipe(@PathVariable UUID id, @Valid @RequestBody List<@Valid RecipeIngredientRequest> ingredients) {
-        List<RecipeIngredient> recipeIngredients = ingredients.stream()
-            .map(ingredient -> RecipeIngredientMapper.toEntity(ingredient))
-            .toList();
-        recipeService.addIngredientsToRecipe(id, recipeIngredients);
+        recipeService.addIngredientsToRecipe(id, ingredients);
     }
 
     @PostMapping("/{id}/make")
