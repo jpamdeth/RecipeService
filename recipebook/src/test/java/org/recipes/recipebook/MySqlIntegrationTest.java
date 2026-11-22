@@ -161,7 +161,7 @@ class MySqlIntegrationTest {
             GRANT ALL ON recipe_import.* TO 'recipe'@'%';
             """));
         assertMysqlSuccess(mysqlScript("recipe_legacy", "/tmp/legacy-schema.sql"));
-        String targetUrl = mysql.getJdbcUrl().replace("/recipes?", "/recipe_import?");
+        String targetUrl = mysql.getJdbcUrl().replaceFirst("/recipes(?=\\?|$)", "/recipe_import");
         Flyway.configure().dataSource(targetUrl, mysql.getUsername(), mysql.getPassword()).load().migrate();
 
         assertMysqlSuccess(mysqlCommand("""
