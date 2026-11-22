@@ -1,47 +1,40 @@
 package org.recipes.recipebook.mapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.recipes.recipebook.dto.IngredientRequest;
 import org.recipes.recipebook.dto.RecipeRequest;
 import org.recipes.recipebook.dto.RecipeResponse;
 import org.recipes.recipebook.model.Ingredient;
 import org.recipes.recipebook.model.Recipe;
+import org.recipes.recipebook.model.RecipeIngredient;
 
 class RecipeMapperTest {
 
     @Test
-    void toEntityMapsRecipeRequestAndNestedIngredients() {
+    void toEntityMapsRecipeDetailsWithServerGeneratedId() {
         UUID recipeId = UUID.randomUUID();
-        UUID ingredientId = UUID.randomUUID();
         RecipeRequest request = new RecipeRequest(
             recipeId,
             "Pancakes",
             "Breakfast stack",
             "breakfast",
             "Mix and cook.",
-            List.of(new IngredientRequest(
-                ingredientId,
-                "Flour",
-                "baking",
-                "shelf stable",
-                5,
-                "cups")));
+            List.of());
 
         Recipe recipe = RecipeMapper.toEntity(request);
 
-        assertEquals(recipeId, recipe.getId());
+        assertNull(recipe.getId());
         assertEquals("Pancakes", recipe.getTitle());
         assertEquals("Breakfast stack", recipe.getDescription());
         assertEquals("breakfast", recipe.getCategory());
         assertEquals("Mix and cook.", recipe.getDirections());
-        assertEquals(1, recipe.getIngredients().size());
-        assertEquals(ingredientId, recipe.getIngredients().get(0).getId());
+        assertTrue(recipe.getIngredients().isEmpty());
     }
 
     @Test
@@ -69,13 +62,9 @@ class RecipeMapperTest {
             "Breakfast stack",
             "breakfast",
             "Mix and cook.",
-            List.of(new Ingredient(
-                ingredientId,
-                "Flour",
-                "baking",
-                "shelf stable",
-                5,
-                "cups")));
+            null);
+        Ingredient flour = new Ingredient(ingredientId, "Flour", "baking", "shelf stable", 5, "cups");
+        recipe.setIngredients(List.of(new RecipeIngredient(recipe, flour, 2, "cups")));
 
         RecipeResponse response = RecipeMapper.toResponse(recipe);
 
@@ -86,6 +75,7 @@ class RecipeMapperTest {
         assertEquals("Mix and cook.", response.directions());
         assertEquals(1, response.ingredients().size());
         assertEquals(ingredientId, response.ingredients().get(0).id());
+        assertEquals(2, response.ingredients().get(0).amount());
     }
 
     @Test

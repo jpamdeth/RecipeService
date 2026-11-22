@@ -2,10 +2,12 @@ package org.recipes.recipebook.service;
 
 import org.recipes.recipebook.model.Ingredient;
 import org.recipes.recipebook.repository.IngredientRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import lombok.NonNull;
@@ -31,17 +33,35 @@ public class IngredientService {
     }
 
     public Ingredient createIngredient(@NonNull Ingredient ingredient) {
+        if (ingredient.getId() != null) {
+            throw new IllegalArgumentException("Omit the id when creating an ingredient. The server assigns it.");
+        }
         return ingredientRepository.save(ingredient);
     }
 
+    @Transactional
     public Ingredient updateIngredient(Ingredient ingredient, UUID id) {
-        if (!ingredient.getId().equals(id))
+        if (ingredient.getId() != null && !id.equals(ingredient.getId()))
             throw new IllegalArgumentException("The ingredient id does not match the id provided");
-        return ingredientRepository.save(ingredient);
+        Ingredient existing = getIngredientById(id);
+        existing.setName(ingredient.getName());
+        existing.setType(ingredient.getType());
+        existing.setState(ingredient.getState());
+        existing.setAmount(ingredient.getAmount());
+        existing.setUnit(ingredient.getUnit());
+        return existing;
     }
 
+    @Transactional
     public void deleteIngredient(@NonNull UUID id) {
-        ingredientRepository.deleteById(id);
+        try {
+            ingredientRepository.deleteById(id);
+            // Check foreign keys while this operation can still translate the error.
+            ingredientRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Remove this ingredient from its recipes before deleting it.", ex);
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,6 +31,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ProblemDetail> handleIllegalArgument(@NonNull IllegalArgumentException ex, @NonNull WebRequest request) {
         return build(HttpStatus.BAD_REQUEST, detailOrDefault(ex.getMessage(), HttpStatus.BAD_REQUEST), List.of(), request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ProblemDetail> handleUnreadableBody(@NonNull WebRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "Send a valid JSON body that matches this endpoint's request format.",
+            List.of(), request);
     }
 
     @ExceptionHandler(ResponseStatusException.class)

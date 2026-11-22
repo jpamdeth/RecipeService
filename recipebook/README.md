@@ -8,7 +8,7 @@ RecipeService is a Spring Boot REST API for managing recipes, pantry ingredients
 - REST controller design with request/response DTOs
 - JPA repositories and transactional business logic
 - MySQL runtime persistence with Flyway migrations
-- Fast H2-backed integration tests plus one MySQL Testcontainers migration test
+- H2-backed tests and MySQL 9.7 integration tests for fresh database initialization, recipe writes, and stock transactions
 - Dockerized local runtime
 - GitHub Actions CI and JaCoCo coverage reporting
 - Consistent JSON error responses
@@ -19,19 +19,21 @@ RecipeService is a Spring Boot REST API for managing recipes, pantry ingredients
 | --- | --- |
 | Runtime | Java 21, Spring Boot 4.2 |
 | API | Spring MVC, Bean Validation, springdoc-openapi |
-| Persistence | Spring Data JPA, MySQL 8, Flyway |
+| Persistence | Spring Data JPA, MySQL 9.7 LTS, Flyway |
 | Tests | JUnit 6, MockMvc, H2, Mockito, Testcontainers, JaCoCo |
 | Local runtime | Docker Compose |
 | CI | GitHub Actions |
 
 ## Quick Start
 
-From this directory:
+From this directory, copy the environment template and set distinct values for `MYSQL_PASSWORD` and `MYSQL_ROOT_PASSWORD` before starting Compose.
 
 ```bash
 cp .env.example .env
-docker compose up -d --build
+docker compose up -d --build --wait
 ```
+
+Flyway creates and seeds the tables on first startup.
 
 The API starts on `http://localhost:8080`.
 
@@ -66,13 +68,27 @@ cp .env.example .env
 docker compose up -d mysql
 ```
 
-Run the app locally:
+Spring connects to `127.0.0.1:3307/recipes` by default. Set the credentials from the Compose `.env` in the shell that runs Gradle.
 
 ```bash
+export SPRING_DATASOURCE_USERNAME=recipe
+read -rsp 'MySQL app password: ' SPRING_DATASOURCE_PASSWORD
+printf '\\n'
+export SPRING_DATASOURCE_PASSWORD
 ./gradlew bootRun
 ```
 
-Run tests and generate coverage. The suite includes one Docker-backed MySQL integration test; if Docker is unavailable, Testcontainers skips that test. CI pre-pulls `mysql:8.0`; locally, run `docker pull mysql:8.0` once if you do not already have that image.
+In PowerShell:
+
+```powershell
+$env:SPRING_DATASOURCE_USERNAME = 'recipe'
+$env:SPRING_DATASOURCE_PASSWORD = [Net.NetworkCredential]::new('', (Read-Host 'MySQL app password' -AsSecureString)).Password
+.\gradlew.bat bootRun
+```
+
+If you changed `MYSQL_DATABASE` or `MYSQL_USER`, set `SPRING_DATASOURCE_URL` or `SPRING_DATASOURCE_USERNAME` to match. The Compose API and database ports bind to loopback.
+
+Run tests and generate coverage. Docker-backed tests require a local `mysql:9.7` image (`docker pull mysql:9.7`). Testcontainers skips them when Docker is unavailable.
 
 ```bash
 ./gradlew test
@@ -86,7 +102,7 @@ build/reports/jacoco/test/html/index.html
 
 ## API Examples
 
-Create an ingredient:
+Create an ingredient without a body ID. The server assigns the ID. Requests that supply an ID return `400 Bad Request`.
 
 ```bash
 curl -i -X POST http://localhost:8080/ingredients \
@@ -114,7 +130,11 @@ curl -i -X POST http://localhost:8080/recipes \
   }'
 ```
 
-Attach ingredients to a recipe:
+On recipe creation or update, each ingredient entry identifies an existing pantry ingredient and provides the recipe quantity and unit. A recipe's returned ingredient `amount` is the quantity required for the recipe. Read pantry stock at `/ingredients/{id}`.
+
+On `PUT /recipes/{id}`, an omitted or null `ingredients` field preserves existing links, a populated list replaces them, and `[]` clears them. The URL identifies the recipe or ingredient on either `PUT` endpoint. An optional body ID must match the URL.
+
+Attach or update individual ingredients without replacing the full list:
 
 ```bash
 curl -i -X POST http://localhost:8080/recipes/{recipeId}/ingredients \
@@ -151,11 +171,11 @@ If stock is insufficient or units do not match, the API returns `409 Conflict`.
 | `GET` | `/ingredients/{id}` | Get one ingredient |
 | `POST` | `/ingredients` | Create an ingredient |
 | `PUT` | `/ingredients/{id}` | Update an ingredient |
-| `DELETE` | `/ingredients/{id}` | Delete an ingredient |
+| `DELETE` | `/ingredients/{id}` | Delete an ingredient. Returns `409 Conflict` while a recipe uses it |
 
 ## Error Format
 
-Errors use Spring's RFC 7807 `ProblemDetail` format. Validation errors include an `errors` extension:
+Errors use Spring's `ProblemDetail` format, including malformed JSON. Validation errors include an `errors` extension:
 
 ```json
 {
@@ -185,6 +205,7 @@ Docker Compose reads `.env` values. Start from `.env.example` and change secrets
 | `SPRING_DATASOURCE_PASSWORD` | Spring datasource password |
 | `SPRING_JPA_HIBERNATE_DDL_AUTO` | Hibernate schema mode, default `none` |
 | `SPRING_FLYWAY_ENABLED` | Enables Flyway migrations, default `true` |
+| `SERVER_ADDRESS` | Bind address, default `127.0.0.1` for local Gradle runs |
 
 ## Database
 

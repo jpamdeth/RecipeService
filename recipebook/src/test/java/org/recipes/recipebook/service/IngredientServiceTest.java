@@ -38,22 +38,20 @@ public class IngredientServiceTest {
 
   @Test
   void createIngredient_ShouldReturnCreatedIngredient() {
-    when(ingredientRepository.save(TestObjects.ingredient)).thenReturn(TestObjects.ingredient);
+    when(ingredientRepository.save(TestObjects.newIngredient)).thenReturn(TestObjects.ingredient);
 
-    Ingredient createdIngredient = ingredientService.createIngredient(TestObjects.ingredient);
+    Ingredient createdIngredient = ingredientService.createIngredient(TestObjects.newIngredient);
 
     assertEquals(TestObjects.ingredient, createdIngredient);
-    verify(ingredientRepository, times(1)).save(TestObjects.ingredient);
+    verify(ingredientRepository, times(1)).save(TestObjects.newIngredient);
   }
 
   @Test
   void updateIngredient_ShouldReturnUpdatedIngredient() {
-    when(ingredientRepository.save(TestObjects.ingredient)).thenReturn(TestObjects.ingredient);
-
+    Ingredient existing = new Ingredient(TestObjects.ingredientId, "Old name", null, null, 0, null);
+    when(ingredientRepository.findById(TestObjects.ingredientId)).thenReturn(Optional.of(existing));
     Ingredient updatedIngredient = ingredientService.updateIngredient(TestObjects.ingredient, TestObjects.ingredientId);
-
     assertEquals(TestObjects.ingredient, updatedIngredient);
-    verify(ingredientRepository, times(1)).save(TestObjects.ingredient);
   }
 
   @Test
@@ -63,6 +61,7 @@ public class IngredientServiceTest {
     ingredientService.deleteIngredient(TestObjects.ingredientId);
 
     verify(ingredientRepository, times(1)).deleteById(TestObjects.ingredientId);
+    verify(ingredientRepository).flush();
   }
 
   @Test

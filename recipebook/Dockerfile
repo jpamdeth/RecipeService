@@ -32,6 +32,7 @@ USER spring:spring
 COPY --from=build /app/build/libs/*.jar app.jar
 
 # Expose port
+ENV SERVER_ADDRESS=0.0.0.0
 EXPOSE 8080
 
 # Health check
