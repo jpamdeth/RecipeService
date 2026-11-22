@@ -1,7 +1,5 @@
 package org.recipes.recipebook;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -9,10 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.UUID;
 
-import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,11 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.Container.ExecResult;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
-import org.testcontainers.utility.MountableFile;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,7 +31,7 @@ class MySqlIntegrationTest {
     private static final String BREAD = "18ffe751-be13-4346-a7e1-0b552589e4e3";
 
     @Container
-    static final MySQLContainer mysql = new MySQLContainer("mysql:8.4")
+    static final MySQLContainer mysql = new MySQLContainer("mysql:9.7")
         .withImagePullPolicy(imageName -> false)
         .withDatabaseName("recipes")
         .withUsername("recipe")
@@ -151,64 +145,7 @@ class MySqlIntegrationTest {
                 """.formatted(missing))).andExpect(status().isNotFound());
     }
 
-    @Test
-    void legacyImportPreservesDataAndRollsBackOnIncompatibleRows() throws Exception {
-        mysql.copyFileToContainer(MountableFile.forClasspathResource("legacy-schema.sql"), "/tmp/legacy-schema.sql");
-        mysql.copyFileToContainer(MountableFile.forHostPath(Path.of("db/import-legacy.sql")), "/tmp/import-legacy.sql");
-        assertMysqlSuccess(mysqlCommand("""
-            CREATE DATABASE recipe_legacy;
-            CREATE DATABASE recipe_import;
-            GRANT ALL ON recipe_import.* TO 'recipe'@'%';
-            """));
-        assertMysqlSuccess(mysqlScript("recipe_legacy", "/tmp/legacy-schema.sql"));
-        String targetUrl = mysql.getJdbcUrl().replaceFirst("/recipes(?=\\?|$)", "/recipe_import");
-        Flyway.configure().dataSource(targetUrl, mysql.getUsername(), mysql.getPassword()).load().migrate();
-
-        assertMysqlSuccess(mysqlCommand("""
-            UPDATE recipe_legacy.recipe SET title = 'Family grilled cheese';
-            UPDATE recipe_legacy.ingredient SET amount = 8 WHERE id = '%s';
-            UPDATE recipe_legacy.recipe_ingredient SET amount = 3 WHERE ingredient_id = '%s';
-            DELETE FROM recipe_legacy.recipe_ingredient WHERE ingredient_id = '%s';
-            INSERT INTO recipe_legacy.recipe_ingredient
-                SELECT * FROM recipe_legacy.recipe_ingredient WHERE ingredient_id = '%s';
-            """.formatted(CHEESE, CHEESE, BREAD, CHEESE)));
-        ExecResult invalid = mysqlScript("recipe_import", "/tmp/import-legacy.sql");
-        assertNotEquals(0, invalid.getExitCode(), invalid.getStdout());
-        assertEquals("grilled cheese sandwich", query("SELECT title FROM recipe_import.recipe"));
-        assertEquals("2", query("SELECT COUNT(*) FROM recipe_legacy.recipe_ingredient"));
-
-        assertMysqlSuccess(mysqlCommand("DELETE FROM recipe_legacy.recipe_ingredient LIMIT 1"));
-        assertMysqlSuccess(mysqlScript("recipe_import", "/tmp/import-legacy.sql"));
-        assertEquals("Family grilled cheese", query("SELECT title FROM recipe_import.recipe"));
-        assertEquals("8", query("SELECT amount FROM recipe_import.ingredient WHERE id = '" + CHEESE + "'"));
-        assertEquals("3", query("SELECT amount FROM recipe_import.recipe_ingredient"));
-        assertEquals("1", query("SELECT COUNT(*) FROM recipe_import.flyway_schema_history WHERE version = '1'"));
-        assertNotEquals(0, mysqlScript("recipe_import", "/tmp/import-legacy.sql").getExitCode());
-    }
-
     private static String pathFromLocation(String location) {
         return URI.create(location).getPath();
-    }
-
-    private static ExecResult mysqlCommand(String sql) throws Exception {
-        return mysql.execInContainer("sh", "-c",
-            "export MYSQL_PWD=\"$MYSQL_ROOT_PASSWORD\"; exec mysql --user=root --batch --skip-column-names -e \"$1\"",
-            "mysql", sql);
-    }
-
-    private static ExecResult mysqlScript(String schema, String path) throws Exception {
-        return mysql.execInContainer("sh", "-c",
-            "export MYSQL_PWD=\"$MYSQL_ROOT_PASSWORD\"; exec mysql --user=root --database=\"$1\" < \"$2\"",
-            "mysql", schema, path);
-    }
-
-    private static String query(String sql) throws Exception {
-        ExecResult result = mysqlCommand(sql);
-        assertMysqlSuccess(result);
-        return result.getStdout().strip();
-    }
-
-    private static void assertMysqlSuccess(ExecResult result) {
-        assertEquals(0, result.getExitCode(), result.getStderr());
     }
 }

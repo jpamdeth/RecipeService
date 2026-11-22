@@ -31,7 +31,7 @@ jobs:
           cache-provider: basic
 
       - name: Pull MySQL test image
-        run: docker pull mysql:8.4
+        run: docker pull mysql:9.7
 
       - name: Build and test
         run: ./gradlew build

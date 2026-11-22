@@ -8,7 +8,7 @@ RecipeService is a Spring Boot REST API for managing recipes, pantry ingredients
 - REST controller design with request/response DTOs
 - JPA repositories and transactional business logic
 - MySQL runtime persistence with Flyway migrations
-- H2-backed tests and MySQL 8.4 integration tests for recipe writes, stock transactions, and legacy imports
+- H2-backed tests and MySQL 9.7 integration tests for fresh database initialization, recipe writes, and stock transactions
 - Dockerized local runtime
 - GitHub Actions CI and JaCoCo coverage reporting
 - Consistent JSON error responses
@@ -19,7 +19,7 @@ RecipeService is a Spring Boot REST API for managing recipes, pantry ingredients
 | --- | --- |
 | Runtime | Java 21, Spring Boot 4.2 |
 | API | Spring MVC, Bean Validation, springdoc-openapi |
-| Persistence | Spring Data JPA, MySQL 8.4 LTS, Flyway |
+| Persistence | Spring Data JPA, MySQL 9.7 LTS, Flyway |
 | Tests | JUnit 6, MockMvc, H2, Mockito, Testcontainers, JaCoCo |
 | Local runtime | Docker Compose |
 | CI | GitHub Actions |
@@ -33,7 +33,7 @@ cp .env.example .env
 docker compose up -d --build --wait
 ```
 
-For an existing MySQL 8.0 volume, follow the [database upgrade](db/upgrade.md) before starting the new stack.
+Flyway creates and seeds the tables on first startup.
 
 The API starts on `http://localhost:8080`.
 
@@ -88,7 +88,7 @@ $env:SPRING_DATASOURCE_PASSWORD = [Net.NetworkCredential]::new('', (Read-Host 'M
 
 If you changed `MYSQL_DATABASE` or `MYSQL_USER`, set `SPRING_DATASOURCE_URL` or `SPRING_DATASOURCE_USERNAME` to match. The Compose API and database ports bind to loopback.
 
-Run tests and generate coverage. Docker-backed tests require a local `mysql:8.4` image (`docker pull mysql:8.4`). Testcontainers skips them when Docker is unavailable.
+Run tests and generate coverage. Docker-backed tests require a local `mysql:9.7` image (`docker pull mysql:9.7`). Testcontainers skips them when Docker is unavailable.
 
 ```bash
 ./gradlew test
